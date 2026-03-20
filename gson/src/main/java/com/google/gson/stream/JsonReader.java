@@ -1122,6 +1122,7 @@ public class JsonReader implements Closeable {
    * @param quote either ' or ".
    */
   private String nextQuotedValue(char quote) throws IOException {
+    final char FIRST_PRINTABLE_ASCI = 0x20;
     // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
     char[] buffer = this.buffer;
     StringBuilder builder = null;
@@ -1135,7 +1136,7 @@ public class JsonReader implements Closeable {
 
         // In strict mode, throw an exception when meeting unescaped control characters (U+0000
         // through U+001F)
-        if (strictness == Strictness.STRICT && c < 0x20) {
+        if (strictness == Strictness.STRICT && c < FIRST_PRINTABLE_ASCI) {
           throw syntaxError(
               "Unescaped control characters (\\u0000-\\u001F) are not allowed in strict mode");
         } else if (c == quote) {
