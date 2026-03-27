@@ -700,13 +700,6 @@ public final class GsonBuilder {
     return this;
   }
 
-  private static int checkDateFormatStyle(int style) {
-    // Valid DateFormat styles are: 0, 1, 2, 3 (FULL, LONG, MEDIUM, SHORT)
-    if (style < 0 || style > 3) {
-      throw new IllegalArgumentException("Invalid style: " + style);
-    }
-    return style;
-  }
 
   /**
    * Configures Gson for custom serialization or deserialization. This method combines the
@@ -1014,6 +1007,14 @@ public final class GsonBuilder {
     @SuppressWarnings("unchecked")
     List<E> list = (List<E>) Collections.unmodifiableList(Arrays.asList(collection.toArray()));
     return list;
+  }
+
+  private static int checkDateFormatStyle(int style) {
+    // Valid DateFormat styles are: 0, 1, 2, 3 (FULL, LONG, MEDIUM, SHORT)
+    if (style < 0 || style > 3) {
+      throw new IllegalArgumentException("Invalid style: " + style);
+    }
+    return style;
   }
 
   private TypeAdapter<Number> doubleAdapter() {
