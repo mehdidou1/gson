@@ -353,35 +353,11 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
         // The accessor method is only used for records. If the type is a record, we will read out
         // values via its accessor method instead of via reflection. This way we will bypass the
         // accessible restrictions
-        Method accessor = null;
-        if (isRecord) {
-          // If there is a static field on a record, there will not be an accessor. Instead we will
-          // use the default field serialization logic, but for deserialization the field is
-          // excluded for simplicity.
-          // Note that Gson ignores static fields by default, but
-          // GsonBuilder.excludeFieldsWithModifiers can overwrite this.
-          if (Modifier.isStatic(field.getModifiers())) {
-            deserialize = false;
-          } else {
-            accessor = ReflectionHelper.getAccessor(raw, field);
-            // If blockInaccessible, skip and perform access check later
-            if (!blockInaccessible) {
-              ReflectionHelper.makeAccessible(accessor);
-            }
+        RecordFieldResult recordResult =
+            handleRecordField(isRecord, field, raw, blockInaccessible, deserialize);
 
-            // @SerializedName can be placed on accessor method, but it is not supported there
-            // If field and method have annotation it is not easily possible to determine if
-            // accessor method is implicit and has inherited annotation, or if it is explicitly
-            // declared with custom annotation
-            if (accessor.getAnnotation(SerializedName.class) != null
-                && field.getAnnotation(SerializedName.class) == null) {
-              String methodDescription =
-                  ReflectionHelper.getAccessibleObjectDescription(accessor, false);
-              throw new JsonIOException(
-                  "@SerializedName on " + methodDescription + " is not supported");
-            }
-          }
-        }
+        Method accessor = recordResult.accessor;
+        deserialize = recordResult.deserialize;
 
         // If blockInaccessible, skip and perform access check later
         // For Records if the accessor method is used the field does not have to be made accessible
@@ -403,13 +379,8 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
                 blockInaccessible);
 
         if (deserialize) {
-          for (String name : fieldNames) {
-            BoundField replaced = deserializedFields.put(name, boundField);
-
-            if (replaced != null) {
-              throw createDuplicateFieldException(originalRaw, name, replaced.field, field);
-            }
-          }
+          registerDeserializedFields(
+              deserializedFields, fieldNames, boundField, originalRaw, field);
         }
 
         if (serialize) {
@@ -423,6 +394,48 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
       raw = type.getRawType();
     }
     return new FieldsData(deserializedFields, new ArrayList<>(serializedFields.values()));
+  }
+
+  private RecordFieldResult handleRecordField(
+      boolean isRecord, Field field, Class<?> raw, boolean blockInaccessible, boolean deserialize) {
+
+    if (!isRecord) {
+      return new RecordFieldResult(null, deserialize);
+    }
+
+    if (Modifier.isStatic(field.getModifiers())) {
+      return new RecordFieldResult(null, false);
+    }
+
+    Method accessor = ReflectionHelper.getAccessor(raw, field);
+
+    if (!blockInaccessible) {
+      ReflectionHelper.makeAccessible(accessor);
+    }
+
+    if (accessor.getAnnotation(SerializedName.class) != null
+        && field.getAnnotation(SerializedName.class) == null) {
+      String methodDescription = ReflectionHelper.getAccessibleObjectDescription(accessor, false);
+      throw new JsonIOException("@SerializedName on " + methodDescription + " is not supported");
+    }
+
+    return new RecordFieldResult(accessor, deserialize);
+  }
+
+  private void registerDeserializedFields(
+      Map<String, BoundField> deserializedFields,
+      List<String> fieldNames,
+      BoundField boundField,
+      Class<?> originalRaw,
+      Field field) {
+
+    for (String name : fieldNames) {
+      BoundField replaced = deserializedFields.put(name, boundField);
+
+      if (replaced != null) {
+        throw createDuplicateFieldException(originalRaw, name, replaced.field, field);
+      }
+    }
   }
 
   abstract static class BoundField {
@@ -646,9 +659,7 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
       } catch (IllegalAccessException e) {
         throw ReflectionHelper.createExceptionForUnexpectedIllegalAccess(e);
       }
-      // Note: InstantiationException should be impossible because record class is not abstract;
-      //  IllegalArgumentException should not be possible unless a bad adapter returns objects of
-      //  the wrong type
+
       catch (InstantiationException | IllegalArgumentException e) {
         throw new RuntimeException(
             "Failed to invoke constructor '"
@@ -665,6 +676,16 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
                 + Arrays.toString(accumulator),
             e.getCause());
       }
+    }
+  }
+
+  private static class RecordFieldResult {
+    final Method accessor;
+    final boolean deserialize;
+
+    RecordFieldResult(Method accessor, boolean deserialize) {
+      this.accessor = accessor;
+      this.deserialize = deserialize;
     }
   }
 }
