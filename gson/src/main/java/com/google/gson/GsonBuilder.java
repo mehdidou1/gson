@@ -125,16 +125,18 @@ public final class GsonBuilder {
       GsonBuilder.DEFAULT.createFactories(
           DEFAULT_CONSTRUCTOR_CONSTRUCTOR, DEFAULT_JSON_ADAPTER_ANNOTATION_TYPE_ADAPTER_FACTORY);
 
+  final ArrayDeque<ReflectionAccessFilter> reflectionFilters = new ArrayDeque<>();
+  final Map<Type, InstanceCreator<?>> instanceCreators = new HashMap<>();
+  final List<TypeAdapterFactory> factories = new ArrayList<>();
+  final List<TypeAdapterFactory> hierarchyFactories = new ArrayList<>();
+
   Excluder excluder = Excluder.DEFAULT;
   LongSerializationPolicy longSerializationPolicy = LongSerializationPolicy.DEFAULT;
   FieldNamingStrategy fieldNamingPolicy = DEFAULT_FIELD_NAMING_STRATEGY;
-  final Map<Type, InstanceCreator<?>> instanceCreators = new HashMap<>();
-  final List<TypeAdapterFactory> factories = new ArrayList<>();
 
   /** tree-style hierarchy factories. These come after factories for backwards compatibility. */
-  final List<TypeAdapterFactory> hierarchyFactories = new ArrayList<>();
-
   boolean serializeNulls = DEFAULT_SERIALIZE_NULLS;
+
   String datePattern = DEFAULT_DATE_PATTERN;
   int dateStyle = DateFormat.DEFAULT;
   int timeStyle = DateFormat.DEFAULT;
@@ -147,7 +149,6 @@ public final class GsonBuilder {
   boolean useJdkUnsafe = DEFAULT_USE_JDK_UNSAFE;
   ToNumberStrategy objectToNumberStrategy = DEFAULT_OBJECT_TO_NUMBER_STRATEGY;
   ToNumberStrategy numberToNumberStrategy = DEFAULT_NUMBER_TO_NUMBER_STRATEGY;
-  final ArrayDeque<ReflectionAccessFilter> reflectionFilters = new ArrayDeque<>();
 
   /**
    * Creates a GsonBuilder instance that can be used to build Gson with various configuration
@@ -699,7 +700,6 @@ public final class GsonBuilder {
     this.datePattern = null;
     return this;
   }
-
 
   /**
    * Configures Gson for custom serialization or deserialization. This method combines the
