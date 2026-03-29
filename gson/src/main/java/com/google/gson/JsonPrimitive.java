@@ -18,6 +18,9 @@ package com.google.gson;
 
 import com.google.gson.internal.LazilyParsedNumber;
 import com.google.gson.internal.NumberLimits;
+import com.google.gson.internal.bind.JsonElementVisitor;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
@@ -324,5 +327,9 @@ public final class JsonPrimitive extends JsonElement {
           || number instanceof Byte;
     }
     return false;
+  }
+
+  public JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException {
+    return visitor.visit(this);
   }
 }

@@ -16,6 +16,10 @@
 
 package com.google.gson;
 
+import com.google.gson.internal.bind.JsonElementVisitor;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
+
 /**
  * A class representing a JSON {@code null} value.
  *
@@ -61,5 +65,9 @@ public final class JsonNull extends JsonElement {
   @Override
   public boolean equals(Object other) {
     return other instanceof JsonNull;
+  }
+
+  public JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException {
+    return visitor.visit(this);
   }
 }

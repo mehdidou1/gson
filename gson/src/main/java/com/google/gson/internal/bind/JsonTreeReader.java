@@ -19,7 +19,6 @@ package com.google.gson.internal.bind;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
@@ -142,23 +141,8 @@ public final class JsonTreeReader extends JsonReader {
       } else {
         return isObject ? JsonToken.END_OBJECT : JsonToken.END_ARRAY;
       }
-    } else if (o instanceof JsonObject) {
-      return JsonToken.BEGIN_OBJECT;
-    } else if (o instanceof JsonArray) {
-      return JsonToken.BEGIN_ARRAY;
-    } else if (o instanceof JsonPrimitive) {
-      JsonPrimitive primitive = (JsonPrimitive) o;
-      if (primitive.isString()) {
-        return JsonToken.STRING;
-      } else if (primitive.isBoolean()) {
-        return JsonToken.BOOLEAN;
-      } else if (primitive.isNumber()) {
-        return JsonToken.NUMBER;
-      } else {
-        throw new AssertionError();
-      }
-    } else if (o instanceof JsonNull) {
-      return JsonToken.NULL;
+    } else if (o instanceof JsonElement) {
+      return ((JsonElement) o).accept(new TokenPeekVisitor());
     } else if (o == SENTINEL_CLOSED) {
       throw new IllegalStateException("JsonReader is closed");
     } else {

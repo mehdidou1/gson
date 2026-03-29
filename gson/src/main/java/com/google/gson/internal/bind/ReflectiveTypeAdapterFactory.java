@@ -658,9 +658,7 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
         return constructor.newInstance(accumulator);
       } catch (IllegalAccessException e) {
         throw ReflectionHelper.createExceptionForUnexpectedIllegalAccess(e);
-      }
-
-      catch (InstantiationException | IllegalArgumentException e) {
+      } catch (InstantiationException | IllegalArgumentException e) {
         throw new RuntimeException(
             "Failed to invoke constructor '"
                 + ReflectionHelper.constructorToString(constructor)

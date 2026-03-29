@@ -18,6 +18,9 @@ package com.google.gson;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.gson.internal.LinkedTreeMap;
+import com.google.gson.internal.bind.JsonElementVisitor;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
 import java.util.Map;
 import java.util.Set;
 
@@ -255,5 +258,9 @@ public final class JsonObject extends JsonElement {
   @Override
   public int hashCode() {
     return members.hashCode();
+  }
+
+  public JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException {
+    return visitor.visit(this);
   }
 }

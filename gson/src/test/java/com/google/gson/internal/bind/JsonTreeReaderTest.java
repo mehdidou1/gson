@@ -121,6 +121,12 @@ public class JsonTreeReaderTest {
       public JsonElement deepCopy() {
         return this;
       }
+
+      @Override
+      public JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException {
+        throw new MalformedJsonException(
+            "Custom JsonElement subclass " + getClass().getName() + " is not supported");
+      }
     }
 
     JsonArray array = new JsonArray();

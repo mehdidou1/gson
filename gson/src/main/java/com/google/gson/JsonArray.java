@@ -18,6 +18,9 @@ package com.google.gson;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.gson.internal.NonNullElementWrapperList;
+import com.google.gson.internal.bind.JsonElementVisitor;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.MalformedJsonException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -432,5 +435,9 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   @Override
   public int hashCode() {
     return elements.hashCode();
+  }
+
+  public JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException {
+    return visitor.visit(this);
   }
 }

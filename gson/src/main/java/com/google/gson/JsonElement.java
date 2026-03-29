@@ -18,7 +18,10 @@ package com.google.gson;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.gson.internal.Streams;
+import com.google.gson.internal.bind.JsonElementVisitor;
+import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import com.google.gson.stream.MalformedJsonException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -431,4 +434,6 @@ public abstract class JsonElement {
       throw new AssertionError(e);
     }
   }
+
+  public abstract JsonToken accept(JsonElementVisitor visitor) throws MalformedJsonException;
 }
