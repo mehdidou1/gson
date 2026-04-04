@@ -649,18 +649,11 @@ public final class Gson {
     TypeAdapter<Object> adapter = (TypeAdapter<Object>) getAdapter(TypeToken.get(typeOfSrc));
 
     Strictness oldStrictness = writer.getStrictness();
-    if (this.strictness != null) {
-      writer.setStrictness(this.strictness);
-    } else if (writer.getStrictness() == Strictness.LEGACY_STRICT) {
-      // For backward compatibility change to LENIENT if writer has default strictness LEGACY_STRICT
-      writer.setStrictness(Strictness.LENIENT);
-    }
-
     boolean oldHtmlSafe = writer.isHtmlSafe();
     boolean oldSerializeNulls = writer.getSerializeNulls();
 
-    writer.setHtmlSafe(htmlSafe);
-    writer.setSerializeNulls(serializeNulls);
+    configureWriter(writer);
+
     try {
       adapter.write(writer, src);
     } catch (IOException e) {
@@ -730,15 +723,7 @@ public final class Gson {
     boolean oldHtmlSafe = writer.isHtmlSafe();
     boolean oldSerializeNulls = writer.getSerializeNulls();
 
-    writer.setHtmlSafe(htmlSafe);
-    writer.setSerializeNulls(serializeNulls);
-
-    if (this.strictness != null) {
-      writer.setStrictness(this.strictness);
-    } else if (writer.getStrictness() == Strictness.LEGACY_STRICT) {
-      // For backward compatibility change to LENIENT if writer has default strictness LEGACY_STRICT
-      writer.setStrictness(Strictness.LENIENT);
-    }
+    configureWriter(writer);
 
     try {
       Streams.write(jsonElement, writer);
@@ -751,6 +736,16 @@ public final class Gson {
       writer.setStrictness(oldStrictness);
       writer.setHtmlSafe(oldHtmlSafe);
       writer.setSerializeNulls(oldSerializeNulls);
+    }
+  }
+
+  private void configureWriter(JsonWriter writer) {
+    writer.setHtmlSafe(htmlSafe);
+    writer.setSerializeNulls(serializeNulls);
+    if (this.strictness != null) {
+      writer.setStrictness(this.strictness);
+    } else if (writer.getStrictness() == Strictness.LEGACY_STRICT) {
+      writer.setStrictness(Strictness.LENIENT);
     }
   }
 
