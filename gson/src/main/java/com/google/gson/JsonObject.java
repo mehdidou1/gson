@@ -83,7 +83,17 @@ public final class JsonObject extends JsonElement {
    */
   @CanIgnoreReturnValue
   public JsonElement remove(String property) {
-    return members.remove(property);
+    JsonElement value = get(property);
+    removeElement(property);
+    return value;
+  }
+
+  private JsonElement getElement(String property) {
+    return members.get(property);
+  }
+
+  private void removeElement(String property) {
+    members.remove(property);
   }
 
   /**
