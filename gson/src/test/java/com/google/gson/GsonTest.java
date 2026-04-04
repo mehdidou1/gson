@@ -607,6 +607,22 @@ public final class GsonTest {
     assertThat(customClass3.s).isEqualTo("overwritten custom-instance");
   }
 
+  @Test
+  public void testNewBuilderPreservesOriginalSettings() {
+    Gson original = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
+
+    assertThat(original.toJson(null, String.class)).isEqualTo("null");
+
+    Gson derived = original.newBuilder().create();
+    assertThat(derived.toJson(null, String.class)).isEqualTo("null");
+
+    Gson withDisabledNulls = original.newBuilder().create();
+
+    String originalJson = original.toJson(new CustomClass1());
+    String derivedJson = derived.toJson(new CustomClass1());
+    assertThat(derivedJson).isEqualTo(originalJson);
+  }
+
   private static void assertCustomGson(Gson gson) {
     String json1 = gson.toJson(new CustomClass1());
     assertThat(json1).isEqualTo("\"custom-adapter\"");
