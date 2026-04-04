@@ -16,6 +16,7 @@
 
 package com.google.gson.internal;
 
+import com.google.gson.JsonIOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import java.lang.reflect.Field;
@@ -36,10 +37,11 @@ public abstract class UnsafeAllocator {
    * non-instantiable classes might crash the JVM on some devices.
    */
   private static void assertInstantiable(Class<?> c) {
-    String exceptionMessage = ConstructorConstructor.checkInstantiable(c);
-    if (exceptionMessage != null) {
+    try {
+      ConstructorConstructor.checkInstantiable(c);
+    } catch (JsonIOException e) {
       throw new AssertionError(
-          "UnsafeAllocator is used for non-instantiable type: " + exceptionMessage);
+          "UnsafeAllocator is used for non-instantiable type: " + e.getMessage());
     }
   }
 

@@ -63,29 +63,22 @@ public final class ConstructorConstructor {
    * @param c instance of the class to be checked
    * @return if instantiable {@code null}, else a non-{@code null} exception message
    */
-  static String checkInstantiable(Class<?> c) {
+  static void checkInstantiable(Class<?> c) {
     int modifiers = c.getModifiers();
     if (Modifier.isInterface(modifiers)) {
-      return "Interfaces can't be instantiated! Register an InstanceCreator"
-          + " or a TypeAdapter for this type. Interface name: "
-          + c.getName();
+      throw new JsonIOException(
+          "Interfaces can't be instantiated! Register an InstanceCreator"
+              + " or a TypeAdapter for this type. Interface name: "
+              + c.getName());
     }
     if (Modifier.isAbstract(modifiers)) {
-      // R8 performs aggressive optimizations where it removes the default constructor of a class
-      // and makes the class `abstract`; check for that here explicitly
-      /*
-       * Note: Ideally should only show this R8-specific message when it is clear that R8 was
-       * used (e.g. when `c.getDeclaredConstructors().length == 0`), but on Android where this
-       * issue with R8 occurs most, R8 seems to keep some constructors for some reason while
-       * still making the class abstract
-       */
-      return "Abstract classes can't be instantiated! Adjust the R8 configuration or register"
-          + " an InstanceCreator or a TypeAdapter for this type. Class name: "
-          + c.getName()
-          + "\nSee "
-          + TroubleshootingGuide.createUrl("r8-abstract-class");
+      throw new JsonIOException(
+          "Abstract classes can't be instantiated! Adjust the R8 configuration or register"
+              + " an InstanceCreator or a TypeAdapter for this type. Class name: "
+              + c.getName()
+              + "\nSee "
+              + TroubleshootingGuide.createUrl("r8-abstract-class"));
     }
-    return null;
   }
 
   /** Calls {@link #get(TypeToken, boolean)}, and allows usage of JDK Unsafe. */
@@ -141,9 +134,10 @@ public final class ConstructorConstructor {
 
     // Check whether type is instantiable; otherwise ReflectionAccessFilter recommendation
     // of adjusting filter suggested below is irrelevant since it would not solve the problem
-    String exceptionMessage = checkInstantiable(rawType);
-    if (exceptionMessage != null) {
-      return new ThrowingObjectConstructor<>(exceptionMessage);
+    try {
+      checkInstantiable(rawType);
+    } catch (JsonIOException e) {
+      return new ThrowingObjectConstructor<>(e.getMessage());
     }
 
     if (!allowUnsafe) {
