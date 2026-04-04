@@ -285,6 +285,12 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
     };
   }
 
+  /*
+    createBoundField(context, reflectionInfo, config){
+      ...
+    }
+  */
+
   private static class FieldsData {
     static final FieldsData EMPTY = new FieldsData(Collections.emptyMap(), Collections.emptyList());
 
