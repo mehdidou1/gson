@@ -16,8 +16,6 @@
 
 package com.google.gson;
 
-import static com.google.gson.GsonBuilder.newImmutableList;
-
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.internal.ConstructorConstructor;
 import com.google.gson.internal.Excluder;
@@ -39,10 +37,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -224,36 +219,52 @@ public final class Gson {
   }
 
   Gson(GsonBuilder builder) {
+
+    this.constructorConstructor =
+        new ConstructorConstructor(
+            new HashMap<>(builder.instanceCreators),
+            builder.useJdkUnsafe,
+            GsonBuilder.newImmutableList(builder.reflectionFilters));
+
+    this.jsonAdapterFactory =
+        new JsonAdapterAnnotationTypeAdapterFactory(this.constructorConstructor);
+    this.factories = builder.createFactories(this.constructorConstructor, this.jsonAdapterFactory);
+    // serialization — read through serConfig
+    this.serializeNulls = builder.serConfig.isSerializeNulls();
+    this.htmlSafe = builder.serConfig.isHtmlSafe();
+    this.serializeSpecialFloatingPointValues = builder.serConfig.isSerializeSpecialFloats();
+    this.generateNonExecutableJson = builder.serConfig.isGenerateNonExecutable();
+    this.formattingStyle = builder.serConfig.getFormattingStyle();
+    this.longSerializationPolicy = builder.serConfig.getLongPolicy();
+
+    // deserialization — read through deserConfig
+    this.objectToNumberStrategy = builder.deserConfig.getObjectToNumberStrategy();
+    this.numberToNumberStrategy = builder.deserConfig.getNumberToNumberStrategy();
+    this.strictness = builder.deserConfig.getStrictness();
+    this.datePattern = builder.deserConfig.getDatePattern();
+    this.dateStyle = builder.deserConfig.getDateStyle();
+    this.timeStyle = builder.deserConfig.getTimeStyle();
+
+    // remaining fields still on GsonBuilder directly
     this.excluder = builder.excluder;
     this.fieldNamingStrategy = builder.fieldNamingPolicy;
-    this.instanceCreators = new HashMap<>(builder.instanceCreators);
-    this.serializeNulls = builder.serializeNulls;
+    this.instanceCreators = Collections.unmodifiableMap(new HashMap<>(builder.instanceCreators));
     this.complexMapKeySerialization = builder.complexMapKeySerialization;
-    this.generateNonExecutableJson = builder.generateNonExecutableJson;
-    this.htmlSafe = builder.escapeHtmlChars;
-    this.formattingStyle = builder.formattingStyle;
-    this.strictness = builder.strictness;
-    this.serializeSpecialFloatingPointValues = builder.serializeSpecialFloatingPointValues;
     this.useJdkUnsafe = builder.useJdkUnsafe;
-    this.longSerializationPolicy = builder.longSerializationPolicy;
-    this.datePattern = builder.datePattern;
-    this.dateStyle = builder.dateStyle;
-    this.timeStyle = builder.timeStyle;
-    this.builderFactories = newImmutableList(builder.factories);
-    this.builderHierarchyFactories = newImmutableList(builder.hierarchyFactories);
-    this.objectToNumberStrategy = builder.objectToNumberStrategy;
-    this.numberToNumberStrategy = builder.numberToNumberStrategy;
-    this.reflectionFilters = newImmutableList(builder.reflectionFilters);
-    if (builder == GsonBuilder.DEFAULT) {
-      this.constructorConstructor = GsonBuilder.DEFAULT_CONSTRUCTOR_CONSTRUCTOR;
-      this.jsonAdapterFactory = GsonBuilder.DEFAULT_JSON_ADAPTER_ANNOTATION_TYPE_ADAPTER_FACTORY;
-      this.factories = GsonBuilder.DEFAULT_TYPE_ADAPTER_FACTORIES;
-    } else {
-      this.constructorConstructor =
-          new ConstructorConstructor(instanceCreators, useJdkUnsafe, reflectionFilters);
-      this.jsonAdapterFactory = new JsonAdapterAnnotationTypeAdapterFactory(constructorConstructor);
-      this.factories = builder.createFactories(constructorConstructor, jsonAdapterFactory);
-    }
+    this.reflectionFilters = GsonBuilder.newImmutableList(builder.reflectionFilters);
+
+    // factories — assembled from the builder as before
+    ConstructorConstructor constructorConstructor =
+        new ConstructorConstructor(
+            builder.instanceCreators,
+            builder.useJdkUnsafe,
+            GsonBuilder.newImmutableList(builder.reflectionFilters));
+    JsonAdapterAnnotationTypeAdapterFactory jsonAdapterFactory =
+        new JsonAdapterAnnotationTypeAdapterFactory(constructorConstructor);
+
+    this.builderFactories = Collections.unmodifiableList(builder.adapterReg.getFactories());
+    this.builderHierarchyFactories =
+        Collections.unmodifiableList(builder.adapterReg.getHierarchyFactories());
   }
 
   /**

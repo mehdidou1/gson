@@ -53,10 +53,10 @@ public final class GsonTest {
     GsonBuilder gsonBuilder = new GsonBuilder();
     gsonBuilder.excluder = CUSTOM_EXCLUDER;
     gsonBuilder.fieldNamingPolicy = CUSTOM_FIELD_NAMING_STRATEGY;
-    gsonBuilder.serializeNulls = true;
+    gsonBuilder.serializeNulls();
     gsonBuilder.disableHtmlEscaping();
-    gsonBuilder.objectToNumberStrategy = CUSTOM_OBJECT_TO_NUMBER_STRATEGY;
-    gsonBuilder.numberToNumberStrategy = CUSTOM_NUMBER_TO_NUMBER_STRATEGY;
+    gsonBuilder.setObjectToNumberStrategy(CUSTOM_OBJECT_TO_NUMBER_STRATEGY);
+    gsonBuilder.setNumberToNumberStrategy(CUSTOM_NUMBER_TO_NUMBER_STRATEGY);
     return gsonBuilder.create();
   }
 
