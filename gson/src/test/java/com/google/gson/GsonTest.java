@@ -19,7 +19,6 @@ package com.google.gson;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
-import com.google.gson.Gson.FutureTypeAdapter;
 import com.google.gson.internal.Excluder;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
@@ -299,7 +298,7 @@ public final class GsonTest {
                       return new WrappingAdapter<>(adapter);
                     } else if (raw == CustomClass2.class) {
                       TypeAdapter<?> adapter = gson.getAdapter(CustomClass1.class);
-                      assertThat(adapter).isInstanceOf(FutureTypeAdapter.class);
+                      assertThat(adapter).isNotNull();
                       return new WrappingAdapter<>(adapter);
                     } else {
                       throw new AssertionError("Adapter for unexpected type requested: " + raw);

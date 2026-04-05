@@ -40,6 +40,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This is the main class for using Gson. Gson is typically used by first constructing a Gson
@@ -343,7 +344,6 @@ public final class Gson {
       threadLocalAdapterResults.set(threadCalls);
       isInitialAdapterRequest = true;
     } else {
-      // the key and value type parameters always agree
       @SuppressWarnings("unchecked")
       TypeAdapter<T> ongoingCall = (TypeAdapter<T>) threadCalls.get(type);
       if (ongoingCall != null) {
@@ -353,14 +353,49 @@ public final class Gson {
 
     TypeAdapter<T> candidate = null;
     try {
-      FutureTypeAdapter<T> call = new FutureTypeAdapter<>();
-      threadCalls.put(type, call);
+      AtomicReference<TypeAdapter<T>> delegateHolder = new AtomicReference<>();
+
+      threadCalls.put(
+          type,
+          new SerializationDelegatingTypeAdapter<T>() {
+            @Override
+            public TypeAdapter<T> getSerializationDelegate() {
+              TypeAdapter<T> delegate = delegateHolder.get();
+              if (delegate == null) {
+                throw new IllegalStateException(
+                    "Adapter for type with cyclic dependency has been used"
+                        + " before dependency has been resolved");
+              }
+              return delegate;
+            }
+
+            @Override
+            public T read(JsonReader in) throws IOException {
+              TypeAdapter<T> delegate = delegateHolder.get();
+              if (delegate == null) {
+                throw new IllegalStateException(
+                    "Adapter for type with cyclic dependency has been used"
+                        + " before dependency has been resolved");
+              }
+              return delegate.read(in);
+            }
+
+            @Override
+            public void write(JsonWriter out, T value) throws IOException {
+              TypeAdapter<T> delegate = delegateHolder.get();
+              if (delegate == null) {
+                throw new IllegalStateException(
+                    "Adapter for type with cyclic dependency has been used"
+                        + " before dependency has been resolved");
+              }
+              delegate.write(out, value);
+            }
+          });
 
       for (TypeAdapterFactory factory : factories) {
         candidate = factory.create(this, type);
         if (candidate != null) {
-          call.setDelegate(candidate);
-          // Replace future adapter with actual adapter
+          delegateHolder.set(candidate);
           threadCalls.put(type, candidate);
           break;
         }
@@ -377,12 +412,6 @@ public final class Gson {
     }
 
     if (isInitialAdapterRequest) {
-      /*
-       * Publish resolved adapters to all threads
-       * Can only do this for the initial request because cyclic dependency TypeA -> TypeB -> TypeA
-       * would otherwise publish adapter for TypeB which uses not yet resolved adapter for TypeA
-       * See https://github.com/google/gson/issues/625
-       */
       typeTokenCache.putAll(threadCalls);
     }
     return candidate;
@@ -1208,53 +1237,6 @@ public final class Gson {
       throw new JsonSyntaxException(e);
     } catch (IOException e) {
       throw new JsonIOException(e);
-    }
-  }
-
-  /**
-   * Proxy type adapter for cyclic type graphs.
-   *
-   * <p><b>Important:</b> Setting the delegate adapter is not thread-safe; instances of {@code
-   * FutureTypeAdapter} must only be published to other threads after the delegate has been set.
-   *
-   * @see Gson#threadLocalAdapterResults
-   */
-  static class FutureTypeAdapter<T> extends SerializationDelegatingTypeAdapter<T> {
-    private TypeAdapter<T> delegate = null;
-
-    public void setDelegate(TypeAdapter<T> typeAdapter) {
-      if (delegate != null) {
-        throw new AssertionError("Delegate is already set");
-      }
-      delegate = typeAdapter;
-    }
-
-    private TypeAdapter<T> delegate() {
-      TypeAdapter<T> delegate = this.delegate;
-      if (delegate == null) {
-        // Can occur when adapter is leaked to other thread or when adapter is used for
-        // (de-)serialization
-        // directly within the TypeAdapterFactory which requested it
-        throw new IllegalStateException(
-            "Adapter for type with cyclic dependency has been used"
-                + " before dependency has been resolved");
-      }
-      return delegate;
-    }
-
-    @Override
-    public TypeAdapter<T> getSerializationDelegate() {
-      return delegate();
-    }
-
-    @Override
-    public T read(JsonReader in) throws IOException {
-      return delegate().read(in);
-    }
-
-    @Override
-    public void write(JsonWriter out, T value) throws IOException {
-      delegate().write(out, value);
     }
   }
 
